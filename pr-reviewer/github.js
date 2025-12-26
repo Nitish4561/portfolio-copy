@@ -18,22 +18,16 @@ export async function getPullRequest() {
 }
 
 export async function getPullRequestDiff() {
-  const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
-  const pull_number = Number(process.env.GITHUB_PR_NUMBER);
-
-  const response = await octokit.request(
+  const res = await octokit.request(
     "GET /repos/{owner}/{repo}/pulls/{pull_number}",
     {
       owner,
       repo,
       pull_number,
-      headers: {
-        accept: "application/vnd.github.v3.diff",
-      },
+      headers: { accept: "application/vnd.github.v3.diff" }
     }
   );
-
-  return response.data;
+  return res.data;
 }
 
 export async function postReviewComment(body) {
