@@ -1,0 +1,199 @@
+import { ArticleLayout } from '@/components/ArticleLayout'
+import Image from 'next/image'
+import anaconda from './anaconda.webp'
+import anacondasetup from './anacondasetup.png'
+import notebook from './notebook.png'
+import helloworld from './helloworld.png'
+
+export const meta = {
+  author: 'Nitish Kalra',
+  date: '2023-04-14',
+  title: 'Getting Started with Machine Learning',
+  description:
+    'In the rapidly evolving world of technology, machine learning has emerged as a game-changing force, transforming industries across the board. From healthcare and finance to transportation and marketing, organizations are leveraging the potential of machine learning algorithms to drive innovation, enhance decision-making processes, and achieve unprecedented levels of efficiency.',
+}
+
+export default (props) => <ArticleLayout meta={meta} {...props} />
+
+In the rapidly evolving world of technology, machine learning has emerged as a game-changing force, transforming industries across the board. From healthcare and finance to transportation and marketing, organizations are leveraging the potential of machine learning algorithms to drive innovation, enhance decision-making processes, and achieve unprecedented levels of efficiency.
+
+“The best way to predict the future is to create it.” — Peter Drucker
+
+## AI aka Artificial Intelligence
+
+Is it a human or a machine? Are computer programs so smart and work efficiently like a human brain?
+
+AI refers to the capability of a machine or a computer system to mimic or imitate human-like intelligence, including the ability to learn, reason, problem-solve, and make decisions.
+
+Machine Learning branches out from AI
+
+Machine learning is a subfield of artificial intelligence (AI) that involves the development of algorithms and statistical models that enable computers to learn from and make predictions or decisions based on data, without being explicitly programmed. It involves the use of data to train algorithms to recognize patterns, make predictions, or solve problems, without being explicitly programmed to do so.
+
+## History of Machine Learning
+
+It dates back to the mid-20th century, with the development of early concepts and algorithms that laid the foundation for modern machine learning.
+
+## 1950s-1960s:
+
+1.) Early work on artificial neural networks, perceptrons, and the development of “Rosenblatt’s perceptron” algorithm, which was one of the first supervised learning algorithms.
+
+2.) The concept of reinforcement learning was introduced, which focuses on training agents to take action in an environment to maximize rewards.
+
+## 1970s-1980s:
+
+1.) The development of decision tree algorithms, such as ID3 and C4.5, which are used for classification tasks.
+
+2.) The introduction of the k-Nearest Neighbors algorithm, a simple instance-based learning approach.
+
+3.) The concept of unsupervised learning was introduced, which focuses on learning patterns or structures in data without labeled examples.
+
+## 1990s-2000s:
+
+1.)The development of support vector machines (SVMs), a popular algorithm for binary classification tasks.
+
+2.)The rise of ensemble methods, such as bagging and boosting, which combine multiple models to improve performance.
+
+3.)The introduction of kernel methods, such as the kernel trick used in SVMs, allows non-linear transformations of data.
+
+4.)The development of probabilistic graphical models, such as Bayesian networks and Markov models, which model the relationships among variables in data.
+
+## 2010s-2020s:
+
+1.) The breakthroughs in deep learning, particularly convolutional neural networks (CNNs) for image recognition and recurrent neural networks (RNNs) for sequential data processing.
+
+2.)The advancements in natural language processing (NLP), include word embeddings, recurrent neural networks (RNNs), and transformer models such as BERT and GPT-3.
+
+3.)The rise of big data and the development of scalable machine learning frameworks, such as Apache Spark and TensorFlow.
+
+4.)The increased focus on ethical considerations in machine learning, including fairness, transparency, and accountability.
+
+## Types of Machine Learning
+
+## Unsupervised Learning:
+
+This mainly focuses on what happened.
+
+1. Unlabeled Data
+2. Finding Patterns
+3. Anomaly Detection
+4. Feature Extraction
+5. No Ground Truth
+6. Dimensionality Reduction
+
+Relative Links:
+https://www.javatpoint.com/unsupervised-machine-learning
+
+Supervised Learning:
+This mainly focuses on what’s going to happen.
+
+1. Labeled Data
+2. Predictive Analysis
+3. Classification & Regression
+4. Direct Feedback
+5. Model Evaluation
+6. Model Selection & Tuning
+
+Relative Links:
+https://www.javatpoint.com/supervised-machine-learning
+
+## Reinforcement Learning:
+
+This mainly focuses on how to make it happen.
+
+1. Exploration and Exploitation
+2. Learning from Feedback
+3. Reward Function
+4. Trial-and-Error Learning
+5. Sequential Decision Making
+6. Markov Decision Process
+
+Relative Learning:
+https://www.geeksforgeeks.org/what-is-reinforcement-learning/
+
+## Machine Learning and Man in the Street
+
+1. Personalized experiences: Most of us today enjoy personalized experiences through recommendation systems used in online shopping, streaming services, social media, and more. These recommendations are powered by ML algorithms that analyze our data to provide tailored content, products, and services.
+
+2. Accessibility to information: It has made information more accessible to us through search engines, virtual assistants, and language translation tools.
+
+3. Improved healthcare: It is being used in medical diagnostics, telemedicine, and remote monitoring, making healthcare services more accessible and convenient for common people.
+
+4. Automation of tasks: It can automate repetitive tasks, such as customer service, data entry, and document processing, freeing up time for us to focus on more meaningful activities or leisure pursuits.
+
+5. Enhanced safety: It is used in technologies like driver-assistance systems in cars and smart home devices, which can enhance safety by reducing human errors and accidents, making everyday life safer and more convenient.
+
+6. Personal finance management: Algos can analyze financial data and provide personalized financial advice, helping us make informed decisions about
+   budgeting, investing, and financial planning, potentially improving our financial well-being.
+
+7. Environmental impact: It can be used in areas such as climate modeling, energy optimization, and waste management, which can have a positive impact on the environment and contribute to a better quality of life for all.
+
+## Machine Learning Requirements
+
+Python (https://www.python.org/), latest release 3.11.2, is a popular programming language due to its extensive libraries, ease of use, and wide community support.
+
+## Libraries:
+
+It has a rich ecosystem of ML libraries, such as TensorFlow, Keras, PyTorch, Scikit-Learn, and NumPy, which provide powerful tools for building ML models, handling data, and evaluating model performance.
+
+## Useful Editors:
+
+1.) Jupyter Notebook
+
+2.) Pycharm
+
+3.) Google Colaboratory
+
+4.) Atom
+
+5.) PyDev
+
+Getting Started with Jupyter Notebook
+
+The easiest way for a beginner to get started with Jupyter Notebooks is by installing Anaconda.
+
+Anaconda is the most widely used Python distribution for data science and comes pre-loaded with all the most popular libraries and tools.
+
+To get Anaconda, simply:
+
+1.) Download the latest version of Anaconda for Python latest version.
+
+2.) Install Anaconda by following the instructions on the download page and/or in the executable.
+
+3.) Open Jupyter via the shortcut Anaconda.
+
+<Image src={anaconda} alt="" />
+4.) Browse to the folder in which you would like to create your first notebook, click
+the “New” drop-down button in the top-right and select “Python 3”:
+<Image src={anacondasetup} alt="" />
+
+5.) The Notebook Interface
+
+<Image src={notebook} alt="" />
+
+There are two fairly prominent terms: cells and kernels are key both to understanding Jupyter.
+
+1.) A kernel is a “computational engine” that executes the code contained in a notebook document.
+
+2.) A cell is a container for text to be displayed in the notebook or code to be executed by the notebook’s kernel.
+
+Type print('Hello World!') into the cell and click the run button.
+
+<Image src={helloworld} alt="" />
+
+Hurray !! you have your first code of Python ready.
+
+For more information and to get familiar with Jupyter: https://jupyter-notebook.readthedocs.io/en/latest/
+
+## Books to Refer:
+
+1. “Pattern Recognition and Machine Learning” by Christopher Bishop: This covers the fundamentals of machine learning, including various models such as linear regression, logistic regression, decision trees, support vector machines, neural networks, and more. It also provides in-depth explanations of key concepts and practical implementation techniques. — My Personal Favorite.
+2. “Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow” by Aurélien Géron
+3. “Deep Learning” by Ian Goodfellow, Yoshua Bengio, and Aaron Courville
+4. “Python Machine Learning” by Sebastian Raschka and Vahid Mirjalili
+5. “Applied Machine Learning” by Kelleher, Mac Namee, and D’Arcy
+
+Hope this would help in your ML journey.
+
+I will continue writing more on “Evaluating the Model, Data Mining, etc.” in upcoming blogs.
+
+Stay Tuned.

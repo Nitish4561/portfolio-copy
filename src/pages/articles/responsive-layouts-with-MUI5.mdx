@@ -1,0 +1,193 @@
+import { ArticleLayout } from '@/components/ArticleLayout'
+
+export const meta = {
+  author: 'Nitish Kalra',
+  date: '2023-04-04',
+  title: 'Responsive Layouts With MUI5',
+  description:
+    'A responsive layout is a design approach that aims to create websites or applications that adapt to the screen size and orientation of the device being used to view them.',
+}
+
+export default (props) => <ArticleLayout meta={meta} {...props} />
+
+A responsive layout is a design approach that aims to create websites or applications that adapt to the screen size and orientation of the device being used to view them.
+
+In other words, a responsive layout adjusts its content and layout based on the size of the screen, so that it looks good and works well on any device, from a small smartphone to a large desktop computer.
+
+Responsive layouts are needed because people use a wide variety of devices to access the internet, from smartphones and tablets to laptops and desktops. Each of these devices has a different screen size and resolution, and a different aspect ratio (i.e., the ratio of the width to the height of the screen). If a website or application is designed to look good only on a certain type of device, it may not work well or be difficult to use on other devices.
+
+A responsive layout solves this problem by using flexible and adaptive design elements that adjust to the size of the screen. For example, a responsive layout may use a grid-based system that adjusts the number and size of columns depending on the screen size, or it may use flexible images and text that resize and reflow depending on the available space.
+
+By creating a responsive layout, we ensure that our website or application looks good and works well on any device, regardless of the screen size or aspect ratio. This not only improves the user experience, but also makes our website or application more accessible and user-friendly, which can increase engagement, conversions, and overall success
+
+Animaginary is our new web animation library that redefines what you thought was possible on the web. Hand-written in optimized WASM, Animaginary can even animate the `height` property of an element at 60fps.
+
+## Responsiveness with MUI-5 could be attained in four ways:
+
+1. Grid
+2. Breakpoints
+3. useMediaQuery
+4. Container
+
+## Grid:
+
+MUI5’s Grid component is a powerful tool for creating responsive layouts. The Grid component provides a flexible and responsive way to organize content into rows and columns, allowing us to create complex layouts that adapt to different screen sizes and devices.
+
+Here are some ways in which the MUI5 Grid component can help in creating a responsive layout:
+
+1. Grid system: The Grid component follows a 12-column grid system that allows us to easily create complex layouts. We can specify the number of columns that each item in the grid should occupy, and the Grid component will automatically adjust the layout based on the available space.
+
+2. Responsive breakpoints: The Grid component supports predefined breakpoints (e.g., xs, sm, md, lg, xl) and custom breakpoints, allowing us to specify different layouts for different screen sizes. We can define the number of columns that each item in the grid should occupy for each breakpoint and the Grid component will adjust the layout accordingly.
+
+3. Spacing: The Grid component provides built-in spacing options that allow us to add padding between grid items and control the spacing between rows and columns. We can specify different spacing values for each breakpoint, allowing us to create layouts that look great on all screen sizes.
+
+4. Alignment: The Grid component provides options for aligning grid items horizontally and vertically. We can specify the alignment for each item in the grid, or for the entire grid container.
+
+5. Nesting: The Grid component supports nesting, allowing us to create complex layouts that include multiple levels of nested grids. This gives you a high degree of flexibility and control over the layout of our content.
+
+Overall, the MUI5 Grid component provides a powerful and flexible way to create responsive layouts that adapt to different screen sizes and devices. By using the built-in features of the Grid component, we can create layouts that look great on all devices, from small mobile screens to large desktop displays.
+
+## Breakpoints:
+
+In MUI5, breakpoints are used to define responsive behavior for components based on the size of the screen or device. MUI5 provides a set of predefined breakpoints that can be used in the sx prop of components or in the theme object. Here are the predefined breakpoints in MUI5:
+
+1. xs: Extra small devices (up to 599px)
+2. sm: Small devices (600px to 959px)
+3. md: Medium devices (960px to 1279px)
+4. lg: Large devices (1280px to 1919px)
+5. xl: Extra large devices (1920px and up)
+
+These breakpoints could be customized
+We can use these breakpoints to set different styles or props for a component based on the size of the screen or device. For example, we can set the fontSize prop of a Typography component to 24px for md and up screens, and 16px for sm and down screens using the sx prop:
+
+```c
+<Typography sx={{ fontSize: { xs: '16px', md: '24px' } }}>Responsive text</Typography>
+```
+
+Alternatively, we can define a custom theme object that includes breakpoints and use it to set styles for components. Here's an example:
+
+```c
+import { createTheme } from '@mui/material/styles';
+
+const theme = createTheme({
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 960,
+      lg: 1280,
+      xl: 1920,
+    },
+  },
+  // other theme options
+});
+
+// use the theme in our app
+```
+
+Once we have defined our custom theme object with breakpoints, we can use them in the sx prop of components, like this:
+
+```c
+import { useTheme } from '@mui/material/styles';
+import { useMediaQuery } from '@mui/material';
+
+function MyComponent() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
+  return (
+    <div>
+      {isSmallScreen ? <p>This is a small screen</p> : <p>This is a large screen</p>}
+    </div>
+  );
+}
+```
+
+In this example, we’re using the useTheme hook to access the breakpoints defined in our theme. We're then using the useMediaQuery hook to check whether the screen size is smaller than the sm breakpoint. If the screen size is smaller than sm, we render a message that says "This is a small screen". Otherwise, we render a message that says "This is a large screen".
+
+## useMediaQuery:
+
+The useMediaQuery hook in MUI5 is used to conditionally render components based on the screen size or device. It can be imported from @mui/material and takes a media query string as its argument. The hook returns a boolean value that indicates whether the screen matches the media query or not.
+
+Here’s an example of how to use the useMediaQuery hook to conditionally render a component:
+
+```c
+import { useMediaQuery } from '@mui/material';
+
+function ExampleComponent() {
+  const isSmallScreen = useMediaQuery('(max-width:600px)');
+
+  return (
+    <div>
+      {isSmallScreen ? (
+        <p>This text is only visible on small screens.</p>
+      ) : (
+        <p>This text is only visible on large screens.</p>
+      )}
+    </div>
+  );
+}
+```
+
+In this example and the example explained for Breakpoints, the useMediaQuery hook is used to determine whether the screen size is smaller than 600 pixels (max-width:600px). If the screen size matches the media query, the isSmallScreen variable will be true and the component will render the text that says "This text is only visible on small screens." If the screen size does not match the media query, the isSmallScreen variable will be false and the component will render the text that says "This text is only visible on large screens."
+
+We can use the useMediaQuery hook to conditionally render any component based on screen size or device, including the conditional rendering of entire sections or components. It's a powerful tool for creating responsive designs in MUI5.
+
+## Container:
+
+To create a responsive design with MUI5 Container component, we can use the maxWidth property, along with the predefined breakpoints or custom breakpoints defined in our theme object.
+
+The Container component provides a fixed-width container for our content, centered on the screen. By default, the Container component has a maxWidth of false, which means that it will take up the full width of the screen. However, you can set a maxWidth value to limit the width of the container and create a responsive design.
+
+Here’s an example of how to use maxWidth and breakpoints to create a responsive Container component:
+
+```c
+import { Container } from '@mui/material';
+
+function ExampleComponent() {
+  return (
+    <Container maxWidth={{ xs: 'sm', sm: 'md', md: 'lg', lg: 'xl' }}>
+      {/* our content here */}
+    </Container>
+  );
+}
+```
+
+In this example, the maxWidth property is set to an object that maps predefined breakpoints to values. The xs, sm, md, lg, and xl keys correspond to the predefined breakpoints in MUI5. The values are the maximum width of the container for each breakpoint. This means that on extra-small screens (xs), the container will have a maximum width of sm, on small screens (sm) the container will have a maximum width of md, and so on.
+
+We can also define custom breakpoints in our theme object and use them with the maxWidth property, like this:
+
+```c
+import { Container } from '@mui/material';
+import { createTheme } from '@mui/material/styles';
+
+const theme = createTheme({
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 960,
+      lg: 1280,
+      xl: 1920,
+    },
+  },
+  // other theme options
+});
+
+function ExampleComponent() {
+  return (
+    <Container maxWidth={{ xs: 'sm', sm: 'md', md: 'lg', lg: 'xl', xl: 'xxl' }}>
+      {/* our content here */}
+    </Container>
+  );
+}
+```
+
+In this example, the custom breakpoint xxl is added to the breakpoints object in the theme. The maxWidth property is updated to include the xxl breakpoint with a maximum width of false (i.e., full width). This means that for screens that match the xxl breakpoint, the container will take up the full width of the screen.
+
+Using the maxWidth property with breakpoints is a powerful tool for creating responsive designs with the MUI5 Container component.
+
+## Conclusion
+
+In this article, we have learned how to create a responsive layout using MUI-5. You can, therefore, use this knowledge to create more quality applications.
+Additionally, more information can be found on https://mui.com/material-ui/guides/responsive-ui/

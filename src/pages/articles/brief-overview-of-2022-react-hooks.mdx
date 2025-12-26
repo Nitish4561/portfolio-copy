@@ -1,0 +1,120 @@
+import { ArticleLayout } from '@/components/ArticleLayout'
+
+export const meta = {
+  author: 'Nitish Kalra',
+  date: '2023-03-23',
+  title: 'Brief Overview of 2022 React Hooks',
+  description:
+    'React Hooks, the most widely used feature, a game changer in the field of coding',
+}
+
+export default (props) => <ArticleLayout meta={meta} {...props} />
+
+React Hooks, the most widely used feature, a game changer in the field of coding.
+
+1. useTransition
+2. useDeferredValue
+3. useId
+
+## useTransition
+
+The useTransition hook is a React hook that is used to add animation and transitions to a component when it mounts, updates, or unmounts.
+It allows us to create a smooth and visually pleasing user interface by adding a delay between the start of an action and its actual execution.
+This is particularly useful when we have a slow or expensive operation that needs to be performed, such as fetching data from an API.
+
+The useTransition hook takes three arguments:
+
+config: an object that specifies the duration of the transition and the type of easing to be used.
+
+startTransition: a function that initiates the transition.
+
+isPending: a boolean that indicates whether the transition is currently pending.
+
+Here's an example of how to use the useTransition hook:
+
+```c
+import { useTransition } from 'react';
+
+function MyComponent() {
+  const [show, setShow] = useState(false);
+  const [isPending, startTransition] = useTransition({ timeoutMs: 300 });
+
+  const handleClick = () => {
+    startTransition(() => {
+      setShow(!show);
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={handleClick}>Toggle</button>
+      {isPending && <div>Loading...</div>}
+      {show && <div>Content</div>}
+    </div>
+  );
+}
+```
+
+In this example, we are using the useTransition hook to create a loading spinner when the component is in a pending state. When the user clicks the "Toggle" button, we call the startTransition function and pass in a callback function that updates the show state. This will trigger a transition that lasts for 300 milliseconds, during which the "Loading..." text will be displayed. Once the transition is complete, the "Content" text will be displayed if the show state is true.
+
+## useDeferredValue
+
+The useDeferred hook is a React hook that allows us to defer the execution of a function until the next frame or a specified amount of time has passed. This can be useful in situations where we have a potentially expensive operation that needs to be performed, but we don't want to block the user interface or cause jank.
+
+1. callback: the function that we want to defer.
+2. options (optional): an object that specifies the delay and whether the callback should be called on the next frame or after a specific amount of time.
+
+Here's an example of how to use the useDeferred hook:
+
+```c
+import { useDeferred } from 'react';
+
+function MyComponent() {
+  const [count, setCount] = useState(0);
+  const deferredIncrement = useDeferred(() => {
+    setCount(count + 1);
+  }, { timeoutMs: 100 });
+
+  const handleClick = () => {
+    deferredIncrement();
+  };
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={handleClick}>Increment</button>
+    </div>
+  );
+}
+```
+
+In this example, we are using the useDeferred hook to defer the execution of the setCount function until 100 milliseconds have passed. When the user clicks the "Increment" button, we call the deferredIncrement function instead of setCount directly. This will trigger a deferred execution of the callback, which will update the count state after the specified delay has passed.
+
+The useDeferred hook can be particularly useful in situations where we have a large number of potentially expensive operations that need to be performed, such as rendering a complex data visualization or processing a large amount of user input. By deferring the execution of these operations, we can ensure that our application remains responsive and performs well even under heavy load.
+
+## useId
+
+The useId hook is a React hook that generates a unique ID that can be used to associate a label with an input element, or to provide a unique identifier for any other purpose.
+
+The useId hook takes one argument, which is an optional prefix that will be included in the generated ID. If no prefix is provided, a default prefix of "id-" will be used.
+
+Here's an example of how to use the useId hook:
+
+```c
+import { useId } from 'react';
+
+function MyComponent() {
+  const inputId = useId('input');
+
+  return (
+    <div>
+      <label htmlFor={inputId}>Name:</label>
+      <input id={inputId} type="text" />
+    </div>
+  );
+}
+```
+
+In this example, we are using the useId hook to generate a unique ID for an input element, and then use that ID to associate a label with the input element. The useId hook will generate a unique ID based on the provided prefix (in this case, "input"), and the resulting ID will be assigned to both the htmlFor attribute of the label element and the id attribute of the input element.
+
+Using the useId hook can help ensure that your application is accessible and adheres to best practices for form design. By associating labels with input elements using unique IDs, you can make it easier for users to understand the purpose of each input and ensure that assistive technologies can properly identify and describe each input.
