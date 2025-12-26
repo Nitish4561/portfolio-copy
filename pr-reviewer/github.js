@@ -111,8 +111,6 @@ export async function postInlineComment({
   const line = getSafeLineFromPatch(patch);
 
   if (!line) {
-    console.warn(`⚠️  Could not find valid line for inline comment on ${path}`);
-    console.warn(`    Reason: No additions found in patch or invalid patch format`);
     return false;
   }
 
@@ -127,14 +125,8 @@ export async function postInlineComment({
       line,
       side: "RIGHT",
     });
-    console.log(`✅ Posted inline comment on ${path}:${line}`);
     return true;
   } catch (err) {
-    console.error(`❌ Failed to post inline comment on ${path}:${line}`);
-    console.error(`    Error: ${err.message}`);
-    if (err.status) {
-      console.error(`    Status: ${err.status}`);
-    }
     return false;
   }
 }
@@ -164,10 +156,8 @@ export async function postInlineCommentAtLine({
   let targetLine = line;
   
   if (!isLineInPatch(patch, line)) {
-    console.warn(`⚠️  Line ${line} not found in patch for ${path}, using safe line`);
     targetLine = getSafeLineFromPatch(patch);
     if (!targetLine) {
-      console.warn(`    Could not find any valid line in patch`);
       return false;
     }
   }
@@ -183,14 +173,8 @@ export async function postInlineCommentAtLine({
       line: targetLine,
       side: "RIGHT",
     });
-    console.log(`✅ Posted inline comment on ${path}:${targetLine}`);
     return true;
   } catch (err) {
-    console.error(`❌ Failed to post inline comment on ${path}:${targetLine}`);
-    console.error(`    Error: ${err.message}`);
-    if (err.status) {
-      console.error(`    Status: ${err.status}`);
-    }
     return false;
   }
 }

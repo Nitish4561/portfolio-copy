@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { buildReviewPrompt } from "./prompt.js";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -83,41 +84,17 @@ function createFallbackReview(reason = "Unknown error") {
 export async function runReview(diff) {
   // Validate input
   if (!diff) {
-    console.warn("⚠️  No diff provided to runReview");
     return createFallbackReview("No diff provided");
   }
   
   if (diff.length < 20) {
-    console.warn("⚠️  Diff too small to review (< 20 chars)");
     return createFallbackReview("Diff too small");
   }
-
-  const prompt = `
-You are a senior software engineer reviewing a single file diff.
-
-IMPORTANT: For each issue you find, you MUST specify the line number in the NEW file (after changes).
-
-How to find line numbers:
-1. Look for hunk headers like: @@ -10,5 +15,8 @@
-   - The "+15,8" means new content starts at line 15
-2. Track line numbers as you go through the diff:
-   - Lines starting with "+" are NEW lines (count these)
-   - Lines starting with " " (space) are context (count these too)
-   - Lines starting with "-" are DELETED (don't count in new file)
-
-Return ONLY a JSON object matching the schema.
-Focus on real issues (duplication, bugs, bad patterns, security issues).
-
-Git diff:
-\`\`\`diff
-${diff}
-\`\`\`
-`;
 
   try {
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
-      input: prompt,
+      input: buildReviewPrompt(diff),
       text: {
         format: {
           type: "json_schema",
@@ -134,14 +111,11 @@ ${diff}
         : null);
 
     if (!output) {
-      console.error("❌ AI response was empty or invalid");
       return createFallbackReview("Empty AI response");
     }
 
     return output;
   } catch (err) {
-    console.error("❌ runReview failed:", err.message);
-    
     // Provide more specific error context
     if (err.message.includes("API key")) {
       return createFallbackReview("Invalid or missing OpenAI API key");
