@@ -82,6 +82,15 @@ const owner = process.env.REPO_OWNER;
 const repo = process.env.REPO_NAME;
 const pull_number = Number(process.env.PR_NUMBER);
 
+export async function getPullRequest() {
+  const res = await octokit.rest.pulls.get({
+    owner,
+    repo,
+    pull_number,
+  });
+  return res.data;
+}
+
 export async function getPullRequestFiles() {
   const res = await octokit.rest.pulls.listFiles({
     owner,
@@ -89,18 +98,24 @@ export async function getPullRequestFiles() {
     pull_number,
     per_page: 100,
   });
-
-  return res.data; // [{ filename, patch }]
+  return res.data;
 }
 
-export async function postInlineComment({ body, path, position }) {
+export async function postInlineComment({
+  body,
+  path,
+  commit_id,
+  line = 1,
+}) {
   await octokit.rest.pulls.createReviewComment({
     owner,
     repo,
     pull_number,
     body,
     path,
-    position,
+    commit_id,
+    line,
+    side: "RIGHT",
   });
 }
 
