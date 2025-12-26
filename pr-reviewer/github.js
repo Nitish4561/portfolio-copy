@@ -8,75 +8,64 @@ const owner = process.env.REPO_OWNER;
 const repo = process.env.REPO_NAME;
 const pull_number = Number(process.env.PR_NUMBER);
 
-/* -------------------- HELPERS -------------------- */
+/* -------------------- PATCH HELPERS -------------------- */
 
-/**
- * Extract a safe line number from a git diff patch for inline commenting.
- * 
- * GitHub API requires inline comments to reference actual lines in the diff.
- * This function finds the first added line, or falls back to the first context line
- * if no additions are found.
- * 
- * @param {string} patch - The git diff patch from GitHub API
- * @returns {number|null} Line number to comment on, or null if invalid patch
- * 
- * @example
- * // Patch: @@ -10,3 +15,5 @@
- * //          context line
- * //        + added line
- * // Returns: 16 (the added line)
- */
 function getSafeLineFromPatch(patch) {
   if (!patch) return null;
 
   const lines = patch.split("\n");
-  let newLine = null;
-  let firstContextLine = null;
+  let currentLine = null;
 
   for (const line of lines) {
-    // Match hunk header: @@ -oldStart,oldCount +newStart,newCount @@
     const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
     if (hunk) {
-      newLine = Number(hunk[1]);
+      currentLine = Number(hunk[1]);
       continue;
     }
 
-    // Only process content lines after we've found a hunk
-    if (newLine !== null) {
-      // Skip file markers
-      if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("\\")) {
-        continue;
+    if (currentLine !== null) {
+      if (line.startsWith("+") && !line.startsWith("+++")) {
+        return currentLine;
       }
 
-      // Found an addition - return immediately (preferred)
-      if (line.startsWith("+") && !line.startsWith("+++")) {
-        return newLine;
+      if (line.startsWith(" ") || line.startsWith("+")) {
+        currentLine++;
       }
-      
-      // Track context lines as fallback
-      if (line.startsWith(" ")) {
-        if (firstContextLine === null) {
-          firstContextLine = newLine;
-        }
-        newLine++;
-      } else if (line.startsWith("+")) {
-        newLine++;
-      }
-      // Deletions (lines starting with '-') don't affect new file line numbers
     }
   }
 
-  // Fallback: return first context line, or first line of first hunk
-  return firstContextLine !== null ? firstContextLine : newLine;
+  return currentLine;
 }
 
-/* -------------------- API FUNCTIONS -------------------- */
+function isLineInPatch(patch, targetLine) {
+  if (!patch || !targetLine) return false;
 
-/**
- * Fetch pull request details from GitHub.
- * 
- * @returns {Promise<Object>} PR data including head SHA, base branch, etc.
- */
+  const lines = patch.split("\n");
+  let currentLine = null;
+
+  for (const line of lines) {
+    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    if (hunk) {
+      currentLine = Number(hunk[1]);
+      continue;
+    }
+
+    if (currentLine !== null) {
+      if (line.startsWith("+") && !line.startsWith("+++")) {
+        if (currentLine === targetLine) return true;
+        currentLine++;
+      } else if (line.startsWith(" ")) {
+        if (currentLine === targetLine) return true;
+        currentLine++;
+      }
+    }
+  }
+
+  return false;
+}
+
+/* -------------------- GITHUB API -------------------- */
+
 export async function getPullRequest() {
   const res = await octokit.rest.pulls.get({
     owner,
@@ -86,11 +75,6 @@ export async function getPullRequest() {
   return res.data;
 }
 
-/**
- * Fetch the list of files changed in the pull request.
- * 
- * @returns {Promise<Array>} Array of file objects with filename, patch, status, etc.
- */
 export async function getPullRequestFiles() {
   const res = await octokit.rest.pulls.listFiles({
     owner,
@@ -101,19 +85,6 @@ export async function getPullRequestFiles() {
   return res.data;
 }
 
-/**
- * Post an inline review comment on a specific file in the PR.
- * 
- * The comment will be attached to the first modified line in the file's diff.
- * Returns true if successful, false if the comment couldn't be posted.
- * 
- * @param {Object} params - Comment parameters
- * @param {string} params.body - The comment text (supports markdown)
- * @param {string} params.path - The file path relative to repo root
- * @param {string} params.commit_id - The SHA of the commit to comment on
- * @param {string} params.patch - The git diff patch for this file
- * @returns {Promise<boolean>} True if comment was posted, false otherwise
- */
 export async function postInlineComment({
   body,
   path,
@@ -121,10 +92,7 @@ export async function postInlineComment({
   patch,
 }) {
   const line = getSafeLineFromPatch(patch);
-
-  if (!line) {
-    return false;
-  }
+  if (!line) return false;
 
   try {
     await octokit.rest.pulls.createReviewComment({
@@ -132,31 +100,17 @@ export async function postInlineComment({
       repo,
       pull_number,
       body,
-      commit_id,
       path,
+      commit_id,
       line,
       side: "RIGHT",
     });
     return true;
-  } catch (err) {
+  } catch {
     return false;
   }
 }
 
-/**
- * Post an inline review comment at a specific line number.
- * 
- * Use this when you know the exact line number where the issue occurs.
- * Falls back to getSafeLineFromPatch if the specified line is invalid.
- * 
- * @param {Object} params - Comment parameters
- * @param {string} params.body - The comment text (supports markdown)
- * @param {string} params.path - The file path relative to repo root
- * @param {string} params.commit_id - The SHA of the commit to comment on
- * @param {number} params.line - The specific line number to comment on
- * @param {string} params.patch - The git diff patch (for validation/fallback)
- * @returns {Promise<boolean>} True if comment was posted, false otherwise
- */
 export async function postInlineCommentAtLine({
   body,
   path,
@@ -164,14 +118,11 @@ export async function postInlineCommentAtLine({
   line,
   patch,
 }) {
-  // Validate the line is actually in the diff
-  let targetLine = line;
-  
+  let target = line;
+
   if (!isLineInPatch(patch, line)) {
-    targetLine = getSafeLineFromPatch(patch);
-    if (!targetLine) {
-      return false;
-    }
+    target = getSafeLineFromPatch(patch);
+    if (!target) return false;
   }
 
   try {
@@ -180,75 +131,17 @@ export async function postInlineCommentAtLine({
       repo,
       pull_number,
       body,
-      commit_id,
       path,
-      line: targetLine,
+      commit_id,
+      line: target,
       side: "RIGHT",
     });
     return true;
-  } catch (err) {
+  } catch {
     return false;
   }
 }
 
-/**
- * Check if a specific line number exists in the patch (new file side).
- * 
- * This function validates that the target line is actually present in the diff
- * as either an added line or a context line, not just that a hunk starts at that line.
- * 
- * @param {string} patch - The git diff patch
- * @param {number} targetLine - The line number to check
- * @returns {boolean} True if the line exists in the patch as an addition or context line
- */
-function isLineInPatch(patch, targetLine) {
-  if (!patch || !targetLine) return false;
-
-  const lines = patch.split("\n");
-  let currentLine = null;
-
-  for (const line of lines) {
-    // Match hunk header: @@ -oldStart,oldCount +newStart,newCount @@
-    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-    if (hunk) {
-      currentLine = Number(hunk[1]);
-      continue;
-    }
-
-    // Only process content lines after we've found a hunk
-    if (currentLine !== null) {
-      // Skip file markers and deletions
-      if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("\\")) {
-        continue;
-      }
-      
-      // Check additions and context lines
-      if (line.startsWith("+") && !line.startsWith("+++")) {
-        // This is an added line in the new file
-        if (currentLine === targetLine) {
-          return true;
-        }
-        currentLine++;
-      } else if (line.startsWith(" ")) {
-        // This is a context line (exists in both old and new)
-        if (currentLine === targetLine) {
-          return true;
-        }
-        currentLine++;
-      }
-      // Deletions (lines starting with "-") don't affect new file line numbers
-    }
-  }
-
-  return false;
-}
-
-/**
- * Post a general comment on the PR (not attached to specific lines).
- * 
- * @param {string} body - The comment text (supports markdown)
- * @returns {Promise<void>}
- */
 export async function postReviewComment(body) {
   await octokit.rest.issues.createComment({
     owner,
@@ -258,23 +151,15 @@ export async function postReviewComment(body) {
   });
 }
 
-/**
- * Apply labels to a PR based on AI review results.
- * 
- * Labels help quickly identify the review status:
- * - "ai-critical": High severity issues found (should block merge)
- * - "ai-needs-attention": Medium/low severity issues found
- * - "ai-clean": No issues detected
- * 
- * @param {number} filesWithIssues - Number of files that have review issues (0 if none)
- * @param {boolean} hasHighSeverity - True if any high-severity issues were found
- * @returns {Promise<void>}
- * 
- * @example
- * await applyLabels(3, true); // Adds "ai-critical" label
- * await applyLabels(2, false); // Adds "ai-needs-attention" label
- * await applyLabels(0, false); // Adds "ai-clean" label
- */
+export async function updatePRDescription(body) {
+  await octokit.rest.pulls.update({
+    owner,
+    repo,
+    pull_number,
+    body,
+  });
+}
+
 export async function applyLabels(filesWithIssues, hasHighSeverity) {
   const labels = hasHighSeverity
     ? ["ai-critical"]

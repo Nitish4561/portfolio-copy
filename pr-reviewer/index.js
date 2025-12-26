@@ -4,59 +4,74 @@ import {
   postInlineComment,
   postInlineCommentAtLine,
   postReviewComment,
+  updatePRDescription,
   applyLabels,
 } from "./github.js";
 
 import { runReview } from "./llm.js";
+import { rewritePRDescription } from "./pr-description.js";
 
 async function main() {
-  // Get PR details to extract commit SHA
+  console.log("🚀 AI PR Reviewer started");
+
   const pr = await getPullRequest();
+  const files = await getPullRequestFiles();
   const commit_id = pr.head.sha;
 
-  // Fetch all changed files
-  const files = await getPullRequestFiles();
+  /* ---------- PR DESCRIPTION AUTO-REWRITE ---------- */
 
-  if (!files.length) {
-    return;
+  const SHOULD_REWRITE =
+    !pr.body || pr.body.includes("<!-- ai-generated -->");
+
+  if (SHOULD_REWRITE) {
+    console.log("✍️ Rewriting PR description");
+
+    const newBody = await rewritePRDescription({
+      title: pr.title,
+      originalBody: pr.body,
+      files,
+    });
+
+    if (newBody) {
+      await updatePRDescription(
+        `<!-- ai-generated -->\n${newBody}`
+      );
+    }
   }
+
+  /* ---------- FILE REVIEWS ---------- */
 
   let filesWithIssues = 0;
   let hasHighSeverity = false;
-  let inlineCommentsFailed = 0;
-  let inlineCommentsPosted = 0;
+  let inlinePosted = 0;
+  let inlineFailed = 0;
 
-  // Review each file
   for (const file of files) {
-    if (!file.patch) {
-      continue;
-    }
+    if (!file.patch) continue;
 
-    // Run AI review on the file's patch
+    console.log("🔍 Reviewing", file.filename);
+
     const review = await runReview(file.patch);
 
-    if (!review?.issues?.length) {
-      continue;
-    }
+    if (!review?.issues?.length) continue;
 
     filesWithIssues++;
 
-    // Check for high severity issues
     if (review.issues.some(i => i.severity === "high")) {
       hasHighSeverity = true;
     }
 
-    // Post individual inline comments for each issue
     for (const issue of review.issues) {
-      const body = `**[${issue.severity.toUpperCase()}]** ${issue.description}
+      const body = `**[${issue.severity.toUpperCase()}]**
+${issue.description}
 
-💡 **Suggestion:** ${issue.suggestion}`;
+💡 **Suggestion**
+${issue.suggestion}`;
 
-      let posted = false;
+      let success = false;
 
-      // Try to post at the specific line if provided by AI
-      if (issue.line && issue.line > 0) {
-        posted = await postInlineCommentAtLine({
+      if (issue.line) {
+        success = await postInlineCommentAtLine({
           body,
           path: file.filename,
           commit_id,
@@ -65,9 +80,8 @@ async function main() {
         });
       }
 
-      // Fallback: try posting at first safe line
-      if (!posted) {
-        posted = await postInlineComment({
+      if (!success) {
+        success = await postInlineComment({
           body,
           path: file.filename,
           commit_id,
@@ -75,36 +89,39 @@ async function main() {
         });
       }
 
-      if (posted) {
-        inlineCommentsPosted++;
+      if (success) {
+        inlinePosted++;
       } else {
-        // Last resort: post as regular PR comment
-        inlineCommentsFailed++;
-        await postReviewComment(`📁 **${file.filename}** (line ${issue.line || '?'})\n\n${body}`);
+        inlineFailed++;
+        await postReviewComment(
+          `📁 **${file.filename}**\n\n${body}`
+        );
       }
     }
   }
 
-  // Post summary comment
-  const totalIssues = inlineCommentsPosted + inlineCommentsFailed;
+  /* ---------- SUMMARY ---------- */
+
   await postReviewComment(`
 🤖 **AI PR Review Summary**
 
 ${
   filesWithIssues > 0
-    ? `❌ Found **${totalIssues} issue(s)** across **${filesWithIssues} file(s)**.`
+    ? `❌ Found **${filesWithIssues} file(s)** with issues.`
     : `✅ No issues found across changed files.`
 }
 
-${inlineCommentsPosted > 0 ? `💬 **${inlineCommentsPosted}** inline comment(s) posted` : ''}${inlineCommentsFailed > 0 ? `\n⚠️  **${inlineCommentsFailed}** comment(s) posted as general comments (couldn't place inline)` : ''}
-${hasHighSeverity ? '\n🚨 **High severity issues detected** - review recommended before merge' : ''}
+💬 Inline comments posted: **${inlinePosted}**
+⚠️ Fallback comments: **${inlineFailed}**
+${hasHighSeverity ? "\n🚨 High severity issues detected." : ""}
 `);
 
-  // Apply labels based on review results
   await applyLabels(filesWithIssues, hasHighSeverity);
+
+  console.log("✅ AI PR Review completed");
 }
 
 main().catch(err => {
-  console.error("❌ Reviewer failed:", err);
+  console.error("❌ Reviewer crashed:", err);
   process.exit(1);
 });
