@@ -41,23 +41,30 @@ async function main() {
       hasHighSeverity = true;
     }
 
-    const body = `
-⚠️ **AI Review Issues**
+    // Post separate inline comments for each issue
+    // This improves visibility and makes it easier to address individual issues
+    for (const issue of review.issues) {
+      const body = `
+⚠️ **AI Review - [${issue.severity.toUpperCase()}]**
 
-${review.issues
-  .map(
-    i =>
-      `- **[${i.severity}]** ${i.description}\n👉 ${i.suggestion}`
-  )
-  .join("\n")}
+**Issue:** ${issue.description}
+
+**Suggestion:** ${issue.suggestion}
 `;
 
-    await postInlineComment({
-      body,
-      path: file.filename,
-      commit_id,
-      patch: file.patch,
-    });
+      try {
+        await postInlineComment({
+          body,
+          path: file.filename,
+          commit_id,
+          patch: file.patch,
+          line: issue.line, // Use AI-provided line number if available
+        });
+      } catch (err) {
+        console.warn(`⚠️  Failed to post inline comment for ${file.filename}:`, err.message);
+        // Continue with other issues even if one fails
+      }
+    }
   }
 
   await postReviewComment(`

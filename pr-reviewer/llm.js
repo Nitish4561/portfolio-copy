@@ -36,6 +36,10 @@ const REVIEW_SCHEMA = {
           severity: { type: "string", enum: ["low", "medium", "high"] },
           description: { type: "string" },
           suggestion: { type: "string" },
+          line: { 
+            type: "number",
+            description: "Optional: Line number in the NEW file where the issue occurs"
+          },
         },
       },
     },
@@ -53,7 +57,13 @@ export async function runReview(diff) {
 You are a senior software engineer reviewing a single file diff.
 
 Return ONLY a JSON object matching the schema.
-Focus on real issues (duplication, bugs, bad patterns).
+Focus on real issues (duplication, bugs, bad patterns, security concerns).
+
+For each issue:
+- Provide the severity (low/medium/high)
+- Give a clear description of the problem
+- Suggest how to fix it
+- OPTIONALLY include the line number in the NEW file (+) where the issue occurs
 
 Git diff:
 \`\`\`diff
