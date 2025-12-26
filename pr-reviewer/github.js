@@ -127,3 +127,22 @@ export async function postReviewComment(body) {
     body,
   });
 }
+
+export async function applyLabels(filesWithIssues, hasHighSeverity) {
+  let labels = [];
+
+  if (hasHighSeverity) {
+    labels.push("ai-critical");
+  } else if (filesWithIssues > 0) {
+    labels.push("ai-needs-attention");
+  } else {
+    labels.push("ai-clean");
+  }
+
+  await octokit.rest.issues.addLabels({
+    owner,
+    repo,
+    issue_number: pull_number,
+    labels,
+  });
+}

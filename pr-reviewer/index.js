@@ -103,6 +103,7 @@ import {
   getPullRequestFiles,
   postInlineComment,
   postReviewComment,
+  applyLabels,
 } from "./github.js";
 import { runReview } from "./llm.js";
 
@@ -122,6 +123,7 @@ async function main() {
   }
 
   let filesWithIssues = 0;
+  let hasHighSeverity = false;
 
   for (const file of files) {
     if (!file.patch) continue; // binary / large files
@@ -133,6 +135,11 @@ async function main() {
     if (!review.issues?.length) continue;
 
     filesWithIssues++;
+    
+    // Check for high severity issues
+    if (review.issues.some(issue => issue.severity === "high")) {
+      hasHighSeverity = true;
+    }
 
     const body = `
 ⚠️ **AI Review Issues**
@@ -162,6 +169,11 @@ ${
     : `✅ No issues found across changed files.`
 }
 `);
+
+  // Apply labels based on review results
+  console.log("🏷️  Applying labels...");
+  await applyLabels(filesWithIssues, hasHighSeverity);
+  console.log("✅ Labels applied");
 
   console.log("✅ Review finished");
 }
