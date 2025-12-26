@@ -92,25 +92,23 @@ export async function runReview(diff) {
   }
 
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: buildReviewPrompt(diff),
-        },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: buildReviewPrompt(diff),
+      text: {
+        format: {
+          type: "json_schema",
           name: "pr_review",
           schema: REVIEW_SCHEMA,
-          strict: true,
         },
       },
     });
 
-    const output = JSON.parse(response.choices[0].message.content);
+    const output =
+      response.output_parsed ??
+      (typeof response.output_text === "string"
+        ? JSON.parse(response.output_text)
+        : null);
 
     if (!output) {
       return createFallbackReview("Empty AI response");

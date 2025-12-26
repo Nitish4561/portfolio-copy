@@ -39,14 +39,9 @@ ${fileList}
 Return ONLY the rewritten PR description in Markdown.
 `;
 
-  const res = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
+  const res = await client.responses.create({
+    model: "gpt-4.1-mini",
+    input: prompt,
   });
 
   return res.choices[0].message.content?.trim();
