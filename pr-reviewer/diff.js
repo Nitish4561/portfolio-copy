@@ -3,9 +3,9 @@
  * 
  * Handles various git diff formats including:
  * - Standard file changes
- * - File renames (detected via 'rename from/to' or different --- a/ and +++ b/ paths)
- * - New files
- * - Deleted files
+ * - File renames (detected via explicit 'rename from/to' lines)
+ * - New files (detected via 'new file mode' or '--- /dev/null')
+ * - Deleted files (detected via 'deleted file mode' or '+++ /dev/null')
  * - Binary files
  * 
  * @param {string} diff - The complete git diff string
@@ -14,8 +14,8 @@
  * @example
  * const result = splitDiffByFile(diffString);
  * // Returns: [
- * //   { path: 'src/app.js', diff: 'diff --git a/src/app.js...' },
- * //   { path: 'README.md', diff: 'diff --git a/README.md...', status: 'renamed' }
+ * //   { path: 'src/app.js', diff: 'diff --git a/src/app.js...', status: 'modified' },
+ * //   { path: 'new-name.md', diff: 'diff --git a/old.md b/new-name.md...', status: 'renamed' }
  * // ]
  */
 export function splitDiffByFile(diff) {
@@ -40,13 +40,8 @@ export function splitDiffByFile(diff) {
       if (line.startsWith('diff --git ')) {
         const match = line.match(/^diff --git a\/(.+?) b\/(.+?)$/);
         if (match) {
-          const oldPath = match[1];
           const newPath = match[2];
-          // Use new path for renamed files, otherwise use either
-          path = newPath !== oldPath ? newPath : newPath;
-          if (oldPath !== newPath) {
-            status = 'renamed';
-          }
+          path = newPath; // Always use the new (target) path
         }
       }
       
@@ -66,6 +61,12 @@ export function splitDiffByFile(diff) {
         path = line.substring(4).trim();
       }
       
+      // Detect renames explicitly via 'rename from' and 'rename to' lines
+      // This is the most reliable way to detect renames in git diffs
+      if (line.startsWith('rename from') || line.startsWith('rename to')) {
+        status = 'renamed';
+      }
+      
       // Detect new files
       if (line.includes('new file mode') || line.startsWith('--- /dev/null')) {
         status = 'added';
@@ -79,11 +80,6 @@ export function splitDiffByFile(diff) {
         if (oldLine) {
           path = oldLine.substring(6).trim();
         }
-      }
-      
-      // Detect renames explicitly
-      if (line.startsWith('rename from') || line.startsWith('rename to')) {
-        status = 'renamed';
       }
       
       // Stop parsing header once we hit the hunk
@@ -102,4 +98,3 @@ export function splitDiffByFile(diff) {
   
   return files;
 }
-  

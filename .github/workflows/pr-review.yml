@@ -21,6 +21,7 @@ jobs:
 
       - name: Run AI PR Reviewer
         env:
+        VERBOSE: "true" 
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
