@@ -102,8 +102,7 @@ function getFirstLineFromPatch(patch) {
 /**
  * Post an inline review comment on a specific file in the PR.
  * 
- * The comment will be attached to a specific line in the file's diff.
- * If no specific line is provided, it uses the first modified line.
+ * The comment will be attached to the first modified line in the file's diff.
  * If no valid line can be found, the comment is skipped with a warning.
  * 
  * @param {Object} params - Comment parameters
@@ -111,7 +110,6 @@ function getFirstLineFromPatch(patch) {
  * @param {string} params.path - The file path relative to repo root
  * @param {string} params.commit_id - The SHA of the commit to comment on
  * @param {string} params.patch - The git diff patch for this file
- * @param {number} [params.line] - Optional specific line number in the NEW file to comment on
  * @returns {Promise<void>}
  */
 export async function postInlineComment({
@@ -119,10 +117,8 @@ export async function postInlineComment({
   path,
   commit_id,
   patch,
-  line: specificLine,
 }) {
-  // Use the specific line if provided, otherwise find the first changed line
-  const line = specificLine || getFirstLineFromPatch(patch);
+  const line = getFirstLineFromPatch(patch);
   
   if (!line) {
     console.warn(`⚠️  Could not determine line number for ${path}, skipping inline comment`);
