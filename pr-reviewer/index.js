@@ -99,6 +99,7 @@
 
 // main();
 import {
+  getPullRequest,
   getPullRequestFiles,
   postInlineComment,
   postReviewComment,
@@ -107,6 +108,11 @@ import { runReview } from "./llm.js";
 
 async function main() {
   console.log("🚀 AI PR Reviewer started");
+
+  // Get PR details to extract commit SHA
+  const pr = await getPullRequest();
+  const commit_id = pr.head.sha;
+  console.log("📌 Latest commit:", commit_id);
 
   const files = await getPullRequestFiles();
 
@@ -142,7 +148,8 @@ ${review.issues
     await postInlineComment({
       body,
       path: file.filename,
-      position: 1, // safest diff position
+      commit_id,
+      line: 1, // first line of the file
     });
   }
 
