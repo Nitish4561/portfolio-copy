@@ -9,7 +9,7 @@ import {
 } from "./github.js";
 
 import { runReview } from "./llm.js";
-import { rewritePRDescription } from "./pr-description.js";
+import { generatePRReview } from "./pr-description.js";
 
 async function main() {
   console.log("🚀 AI PR Reviewer started");
@@ -18,23 +18,26 @@ async function main() {
   const files = await getPullRequestFiles();
   const commit_id = pr.head.sha;
 
-  /* ---------- PR DESCRIPTION AUTO-REWRITE ---------- */
+  /* ---------- OVERALL PR REVIEW ---------- */
 
-  const SHOULD_REWRITE =
+  const SHOULD_GENERATE_REVIEW =
     !pr.body || pr.body.includes("<!-- ai-generated -->");
 
-  if (SHOULD_REWRITE) {
-    console.log("✍️ Rewriting PR description");
+  let overallReview = null;
 
-    const newBody = await rewritePRDescription({
+  if (SHOULD_GENERATE_REVIEW) {
+    console.log("✍️ Generating overall PR review");
+
+    overallReview = await generatePRReview({
       title: pr.title,
       originalBody: pr.body,
       files,
     });
 
-    if (newBody) {
+    if (overallReview) {
+      // Update PR description with just the summary
       await updatePRDescription(
-        `<!-- ai-generated -->\n${newBody}`
+        `<!-- ai-generated -->\n${overallReview.summary}`
       );
     }
   }
@@ -102,19 +105,37 @@ ${issue.suggestion}`;
 
   /* ---------- SUMMARY ---------- */
 
-  await postReviewComment(`
-🤖 **AI PR Review Summary**
+  let summaryComment = `🤖 **AI PR Review**\n\n`;
 
-${
-  filesWithIssues > 0
-    ? `❌ Found **${filesWithIssues} file(s)** with issues.`
-    : `✅ No issues found across changed files.`
-}
+  // Add overall review if available
+  if (overallReview) {
+    summaryComment += `**Summary:**\n${overallReview.summary}\n\n`;
+    summaryComment += `**Quality Score:** ${overallReview.quality_score}/10\n`;
+    summaryComment += `**Should Block Merge:** ${overallReview.should_block_merge ? "❌ Yes" : "✅ No"}\n\n`;
+    
+    if (overallReview.positive_notes && overallReview.positive_notes.length > 0) {
+      summaryComment += overallReview.positive_notes.map(note => `- ${note}`).join("\n");
+      summaryComment += "\n\n";
+    }
+    
+    summaryComment += "---\n\n";
+  }
 
-💬 Inline comments posted: **${inlinePosted}**
-⚠️ Fallback comments: **${inlineFailed}**
-${hasHighSeverity ? "\n🚨 High severity issues detected." : ""}
-`);
+  // Add file-level review summary
+  summaryComment += `${
+    filesWithIssues > 0
+      ? `❌ Found **${filesWithIssues} file(s)** with issues.`
+      : `✅ No issues found across changed files.`
+  }\n\n`;
+  
+  summaryComment += `💬 Inline comments posted: **${inlinePosted}**\n`;
+  summaryComment += `⚠️ Fallback comments: **${inlineFailed}**\n`;
+  
+  if (hasHighSeverity) {
+    summaryComment += `\n🚨 High severity issues detected.`;
+  }
+
+  await postReviewComment(summaryComment);
 
   await applyLabels(filesWithIssues, hasHighSeverity);
 
