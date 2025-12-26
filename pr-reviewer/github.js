@@ -106,7 +106,7 @@ export async function postInlineComment({
       side: "RIGHT",
     });
     return true;
-  } catch {
+  } catch (err) {
     console.error("Failed to post inline comment:", err);
     return false;
   }
@@ -138,7 +138,7 @@ export async function postInlineCommentAtLine({
       side: "RIGHT",
     });
     return true;
-  } catch {
+  } catch (err) {
     console.error("Failed to post inline comment at line:", err);
     return false;
   }
@@ -154,12 +154,27 @@ export async function postReviewComment(body) {
 }
 
 export async function updatePRDescription(body) {
-  await octokit.rest.pulls.update({
-    owner,
-    repo,
-    pull_number,
-    body,
-  });
+  try {
+    console.log(`📝 Updating PR #${pull_number} description...`);
+    console.log(`Description length: ${body.length} characters`);
+    
+    await octokit.rest.pulls.update({
+      owner,
+      repo,
+      pull_number,
+      body,
+    });
+    
+    console.log("✅ PR description updated via GitHub API");
+  } catch (err) {
+    console.error("❌ Failed to update PR description:");
+    console.error("Error:", err.message);
+    if (err.response) {
+      console.error("Status:", err.response.status);
+      console.error("Data:", JSON.stringify(err.response.data, null, 2));
+    }
+    throw err;
+  }
 }
 
 export async function applyLabels(filesWithIssues, hasHighSeverity) {

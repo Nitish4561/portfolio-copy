@@ -35,10 +35,17 @@ async function main() {
     });
 
     if (overallReview) {
+      console.log("✅ Generated review:", JSON.stringify(overallReview, null, 2));
+      console.log("📝 Updating PR description...");
+      
       // Update PR description with just the summary
       await updatePRDescription(
         `<!-- ai-generated -->\n${overallReview.summary}`
       );
+      
+      console.log("✅ PR description updated successfully");
+    } else {
+      console.warn("⚠️ Failed to generate overall PR review - review will be skipped");
     }
   }
 

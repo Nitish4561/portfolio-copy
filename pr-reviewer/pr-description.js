@@ -68,6 +68,8 @@ Provide a thorough analysis focusing on the overall impact and purpose of these 
 `;
 
   try {
+    console.log("🤖 Calling OpenAI API for PR review...");
+    
     const res = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -86,9 +88,22 @@ Provide a thorough analysis focusing on the overall impact and purpose of these 
       },
     });
 
-    return JSON.parse(res.choices[0].message.content);
+    console.log("✅ OpenAI API responded successfully");
+    const review = JSON.parse(res.choices[0].message.content);
+    console.log("✅ Parsed PR review JSON");
+    
+    return review;
   } catch (err) {
-    console.error("Failed to generate PR review:", err);
+    console.error("❌ Failed to generate PR review:");
+    console.error("Error name:", err.name);
+    console.error("Error message:", err.message);
+    console.error("Error stack:", err.stack);
+    
+    if (err.response) {
+      console.error("API Response Status:", err.response.status);
+      console.error("API Response Data:", JSON.stringify(err.response.data, null, 2));
+    }
+    
     return null;
   }
 }
