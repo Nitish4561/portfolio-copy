@@ -156,7 +156,7 @@ ${review.issues
       body,
       path: file.filename,
       commit_id,
-      line: 1, // first line of the file
+      patch: file.patch,
     });
   }
 

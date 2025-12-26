@@ -101,12 +101,56 @@ export async function getPullRequestFiles() {
   return res.data;
 }
 
+/**
+ * Extract the first valid line number from a git diff patch
+ * Returns the line number of the first addition in the diff
+ */
+function getFirstLineFromPatch(patch) {
+  if (!patch) return null;
+  
+  const lines = patch.split('\n');
+  let currentLine = 0;
+  
+  for (const line of lines) {
+    // Look for the hunk header (e.g., @@ -1,5 +1,7 @@)
+    const hunkMatch = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    if (hunkMatch) {
+      currentLine = parseInt(hunkMatch[1], 10);
+      continue;
+    }
+    
+    // If we've started tracking lines, check for additions or context
+    if (currentLine > 0) {
+      if (line.startsWith('+') && !line.startsWith('+++')) {
+        // Found the first addition
+        return currentLine;
+      } else if (line.startsWith(' ')) {
+        // Context line
+        currentLine++;
+      } else if (line.startsWith('+')) {
+        currentLine++;
+      }
+    }
+  }
+  
+  // If no addition found, return the first line from the first hunk
+  const firstHunk = patch.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/m);
+  return firstHunk ? parseInt(firstHunk[1], 10) : 1;
+}
+
 export async function postInlineComment({
   body,
   path,
   commit_id,
-  line = 1,
+  patch,
 }) {
+  const line = getFirstLineFromPatch(patch);
+  
+  if (!line) {
+    console.warn(`⚠️  Could not determine line number for ${path}, skipping inline comment`);
+    return;
+  }
+  
   await octokit.rest.pulls.createReviewComment({
     owner,
     repo,
