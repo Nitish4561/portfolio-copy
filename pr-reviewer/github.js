@@ -14,8 +14,8 @@ const pull_number = Number(process.env.PR_NUMBER);
  * Extract a safe line number from a git diff patch for inline commenting.
  * 
  * GitHub API requires inline comments to reference actual lines in the diff.
- * This function finds the first added line, or falls back to the first line
- * of the first hunk if no additions are found.
+ * This function finds the first added line, or falls back to the first context line
+ * if no additions are found.
  * 
  * @param {string} patch - The git diff patch from GitHub API
  * @returns {number|null} Line number to comment on, or null if invalid patch
@@ -31,6 +31,7 @@ function getSafeLineFromPatch(patch) {
 
   const lines = patch.split("\n");
   let newLine = null;
+  let firstContextLine = null;
 
   for (const line of lines) {
     // Match hunk header: @@ -oldStart,oldCount +newStart,newCount @@
@@ -40,22 +41,33 @@ function getSafeLineFromPatch(patch) {
       continue;
     }
 
-    // Track line numbers after we've found a hunk
+    // Only process content lines after we've found a hunk
     if (newLine !== null) {
-      // Found an addition (not a file marker like +++ b/file)
-      if (line.startsWith("+") && !line.startsWith("+++")) {
-        return newLine; // Return first added line
+      // Skip file markers
+      if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("\\")) {
+        continue;
       }
-      // Context lines and additions increment the line counter
-      if (line.startsWith(" ") || line.startsWith("+")) {
+
+      // Found an addition - return immediately (preferred)
+      if (line.startsWith("+") && !line.startsWith("+++")) {
+        return newLine;
+      }
+      
+      // Track context lines as fallback
+      if (line.startsWith(" ")) {
+        if (firstContextLine === null) {
+          firstContextLine = newLine;
+        }
+        newLine++;
+      } else if (line.startsWith("+")) {
         newLine++;
       }
       // Deletions (lines starting with '-') don't affect new file line numbers
     }
   }
 
-  // Fallback: return first line of first hunk if no additions found
-  return newLine;
+  // Fallback: return first context line, or first line of first hunk
+  return firstContextLine !== null ? firstContextLine : newLine;
 }
 
 /* -------------------- API FUNCTIONS -------------------- */
@@ -182,9 +194,12 @@ export async function postInlineCommentAtLine({
 /**
  * Check if a specific line number exists in the patch (new file side).
  * 
+ * This function validates that the target line is actually present in the diff
+ * as either an added line or a context line, not just that a hunk starts at that line.
+ * 
  * @param {string} patch - The git diff patch
  * @param {number} targetLine - The line number to check
- * @returns {boolean} True if the line exists in the patch
+ * @returns {boolean} True if the line exists in the patch as an addition or context line
  */
 function isLineInPatch(patch, targetLine) {
   if (!patch || !targetLine) return false;
@@ -193,23 +208,35 @@ function isLineInPatch(patch, targetLine) {
   let currentLine = null;
 
   for (const line of lines) {
-    // Match hunk header
+    // Match hunk header: @@ -oldStart,oldCount +newStart,newCount @@
     const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
     if (hunk) {
       currentLine = Number(hunk[1]);
       continue;
     }
 
+    // Only process content lines after we've found a hunk
     if (currentLine !== null) {
-      // Check if we've reached the target line
-      if (currentLine === targetLine) {
-        return true;
+      // Skip file markers and deletions
+      if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("\\")) {
+        continue;
       }
       
-      // Increment for context and additions
-      if (line.startsWith(" ") || line.startsWith("+")) {
+      // Check additions and context lines
+      if (line.startsWith("+") && !line.startsWith("+++")) {
+        // This is an added line in the new file
+        if (currentLine === targetLine) {
+          return true;
+        }
+        currentLine++;
+      } else if (line.startsWith(" ")) {
+        // This is a context line (exists in both old and new)
+        if (currentLine === targetLine) {
+          return true;
+        }
         currentLine++;
       }
+      // Deletions (lines starting with "-") don't affect new file line numbers
     }
   }
 
