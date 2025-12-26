@@ -42,8 +42,8 @@ export function splitDiffByFile(diff) {
         if (match) {
           const oldPath = match[1];
           const newPath = match[2];
-          // Use new path for renamed files, otherwise use either
-          path = newPath !== oldPath ? newPath : newPath;
+          // Always use the new path (target file after changes)
+          path = newPath;
           if (oldPath !== newPath) {
             status = 'renamed';
           }
