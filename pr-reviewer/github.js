@@ -155,17 +155,12 @@ export async function postReviewComment(body) {
 
 export async function updatePRDescription(body) {
   try {
-    console.log(`📝 Updating PR #${pull_number} description...`);
-    console.log(`Description length: ${body.length} characters`);
-    
     await octokit.rest.pulls.update({
       owner,
       repo,
       pull_number,
       body,
     });
-    
-    console.log("✅ PR description updated via GitHub API");
   } catch (err) {
     console.error("❌ Failed to update PR description:");
     console.error("Error:", err.message);
