@@ -31,8 +31,18 @@ async function main() {
     console.log("🔍 Reviewing", file.filename);
 
     const review = await runReview(file.patch);
+    
+    // Debug logging
+    console.log(`📊 Review result for ${file.filename}:`, {
+      issuesCount: review.issues?.length ?? 0,
+      summary: review.summary,
+      qualityScore: review.quality_score,
+    });
 
-    if (!review.issues?.length) continue;
+    if (!review.issues?.length) {
+      console.log(`ℹ️  No issues found in ${file.filename}`);
+      continue;
+    }
 
     filesWithIssues++;
     
@@ -58,7 +68,7 @@ async function main() {
           path: file.filename,
           commit_id,
           patch: file.patch,
-          line: issue.line, // Use AI-provided line number if available
+          // Line number is automatically determined from the patch
         });
       } catch (err) {
         console.warn(`⚠️  Failed to post inline comment for ${file.filename}:`, err.message);

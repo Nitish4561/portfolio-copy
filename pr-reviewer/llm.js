@@ -23,28 +23,45 @@ const REVIEW_SCHEMA = {
     "positive_notes",
   ],
   properties: {
-    summary: { type: "string" },
-    quality_score: { type: "number" },
-    should_block_merge: { type: "boolean" },
+    summary: { 
+      type: "string",
+      description: "Brief summary of the code review"
+    },
+    quality_score: { 
+      type: "number",
+      description: "Code quality score from 0-10"
+    },
+    should_block_merge: { 
+      type: "boolean",
+      description: "Whether this PR should be blocked from merging due to critical issues"
+    },
     issues: {
       type: "array",
+      description: "List of issues found in the code",
       items: {
         type: "object",
         additionalProperties: false,
         required: ["severity", "description", "suggestion"],
         properties: {
-          severity: { type: "string", enum: ["low", "medium", "high"] },
-          description: { type: "string" },
-          suggestion: { type: "string" },
-          line: { 
-            type: "number",
-            description: "Optional: Line number in the NEW file where the issue occurs"
+          severity: { 
+            type: "string", 
+            enum: ["low", "medium", "high"],
+            description: "Severity level of the issue"
+          },
+          description: { 
+            type: "string",
+            description: "Clear description of the problem"
+          },
+          suggestion: { 
+            type: "string",
+            description: "How to fix the issue"
           },
         },
       },
     },
     positive_notes: {
       type: "array",
+      description: "Positive aspects of the code",
       items: { type: "string" },
     },
   },
@@ -54,16 +71,19 @@ export async function runReview(diff) {
   if (!diff || diff.length < 20) return FALLBACK_REVIEW;
 
   const prompt = `
-You are a senior software engineer reviewing a single file diff.
+You are a senior software engineer reviewing code changes in a pull request.
 
-Return ONLY a JSON object matching the schema.
-Focus on real issues (duplication, bugs, bad patterns, security concerns).
+Analyze this git diff and identify real issues such as:
+- Bugs and logic errors
+- Security vulnerabilities
+- Code duplication
+- Bad patterns and anti-patterns
+- Performance issues
 
-For each issue:
-- Provide the severity (low/medium/high)
-- Give a clear description of the problem
-- Suggest how to fix it
-- OPTIONALLY include the line number in the NEW file (+) where the issue occurs
+For each issue found:
+- Assign severity: "low", "medium", or "high"
+- Provide a clear description of the problem
+- Suggest a specific fix
 
 Git diff:
 \`\`\`diff
@@ -72,27 +92,43 @@ ${diff}
 `;
 
   try {
-    const response = await client.responses.create({
+    console.log("🤖 Calling OpenAI API...");
+    const response = await client.beta.chat.completions.parse({
       model: "gpt-4.1-mini",
-      input: prompt,
-      text: {
-        format: {
-          type: "json_schema",
+      messages: [
+        {
+          role: "system",
+          content: "You are a senior software engineer reviewing code. Focus on real issues like bugs, security concerns, bad patterns, and code duplication."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
           name: "pr_review",
+          strict: true,
           schema: REVIEW_SCHEMA,
         },
       },
     });
 
-    const output =
-      response.output_parsed ??
-      (typeof response.output_text === "string"
-        ? JSON.parse(response.output_text)
-        : null);
+    console.log("✅ OpenAI API response received");
+    
+    const output = response.choices[0]?.message?.parsed;
 
-    return output || FALLBACK_REVIEW;
+    if (!output) {
+      console.warn("⚠️  OpenAI returned null output, using fallback");
+      return FALLBACK_REVIEW;
+    }
+    
+    console.log(`📝 Issues found: ${output.issues?.length ?? 0}`);
+    return output;
   } catch (err) {
     console.error("❌ runReview failed:", err.message);
+    console.error("Error details:", err);
     return FALLBACK_REVIEW;
   }
 }
