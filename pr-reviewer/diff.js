@@ -1,19 +1,36 @@
 export function splitDiffByFile(diff) {
     const files = [];
-    const fileDiffs = diff.split(/^diff --git /gm).slice(1);
+    const lines = diff.split("\n");
   
-    for (const fileDiff of fileDiffs) {
-      const headerLine = fileDiff.split("\n")[0];
+    let currentFile = null;
+    let currentDiff = [];
   
-      // Example header:
-      // a/src/file.js b/src/file.js
-      const match = headerLine.match(/^a\/(.+?) b\/(.+)$/);
+    for (const line of lines) {
+      // New file detected
+      if (line.startsWith("+++ b/")) {
+        // Save previous file
+        if (currentFile) {
+          files.push({
+            path: currentFile,
+            diff: currentDiff.join("\n"),
+          });
+        }
   
-      if (!match) continue;
+        currentFile = line.replace("+++ b/", "").trim();
+        currentDiff = [line];
+        continue;
+      }
   
+      if (currentFile) {
+        currentDiff.push(line);
+      }
+    }
+  
+    // Push last file
+    if (currentFile) {
       files.push({
-        path: match[2],
-        diff: "diff --git " + fileDiff,
+        path: currentFile,
+        diff: currentDiff.join("\n"),
       });
     }
   
