@@ -105,5 +105,6 @@ ${hasHighSeverity ? '\n🚨 **High severity issues detected** - review recommend
 }
 
 main().catch(err => {
+  console.error("❌ Reviewer failed:", err);
   process.exit(1);
 });
