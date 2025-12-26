@@ -107,89 +107,34 @@ import {
 } from "./github.js";
 import { runReview } from "./llm.js";
 
-// Configuration
-const VERBOSE = process.env.VERBOSE === "true" || process.env.VERBOSE === "1";
-const MAX_PATCH_SIZE = 50000; // 50KB limit for patches to avoid API issues
-
-/**
- * Log a message only if VERBOSE mode is enabled.
- * Set VERBOSE=true in environment to enable detailed logging.
- */
-function log(...args) {
-  if (VERBOSE) {
-    console.log(...args);
-  }
-}
-
-/**
- * Validate if a file patch is suitable for inline commenting.
- * 
- * @param {Object} file - File object from GitHub API
- * @returns {boolean} True if the patch can be processed
- */
-function isValidPatchForComment(file) {
-  // Skip files without patches (binary, renamed without changes, etc.)
-  if (!file.patch) {
-    log(`⏭️  Skipping ${file.filename}: no patch (binary or no content changes)`);
-    return false;
-  }
-  
-  // Check if patch is too large (GitHub API has limits)
-  if (file.patch.length > MAX_PATCH_SIZE) {
-    console.warn(`⚠️  Skipping ${file.filename}: patch too large (${file.patch.length} bytes)`);
-    return false;
-  }
-  
-  // Check if patch has valid hunks
-  if (!file.patch.includes('@@')) {
-    log(`⏭️  Skipping ${file.filename}: no valid diff hunks`);
-    return false;
-  }
-  
-  return true;
-}
-
 async function main() {
   console.log("🚀 AI PR Reviewer started");
 
   // Get PR details to extract commit SHA
   const pr = await getPullRequest();
   const commit_id = pr.head.sha;
-  log("📌 Latest commit:", commit_id);
+  console.log("📌 Latest commit:", commit_id);
 
   const files = await getPullRequestFiles();
 
   if (!files.length) {
-    console.log("ℹ️  No files changed in this PR");
+    console.log("No files changed");
     return;
   }
 
-  console.log(`📂 Reviewing ${files.length} file(s)...`);
-
   let filesWithIssues = 0;
   let hasHighSeverity = false;
-  let filesProcessed = 0;
-  let filesSkipped = 0;
 
   for (const file of files) {
-    // Validate patch before processing
-    if (!isValidPatchForComment(file)) {
-      filesSkipped++;
-      continue;
-    }
+    if (!file.patch) continue; // binary / large files
 
-    log(`🔍 Reviewing ${file.filename}`);
+    console.log("🔍 Reviewing", file.filename);
 
     const review = await runReview(file.patch);
 
-    if (!review.issues?.length) {
-      log(`✅ ${file.filename}: No issues found`);
-      filesProcessed++;
-      continue;
-    }
+    if (!review.issues?.length) continue;
 
     filesWithIssues++;
-    filesProcessed++;
     
     // Check for high severity issues
     if (review.issues.some(issue => issue.severity === "high")) {
@@ -207,21 +152,15 @@ ${review.issues
   .join("\n")}
 `;
 
-    try {
-      await postInlineComment({
-        body,
-        path: file.filename,
-        commit_id,
-        patch: file.patch,
-      });
-      log(`💬 Posted comment on ${file.filename}`);
-    } catch (error) {
-      console.error(`❌ Failed to post comment on ${file.filename}:`, error.message);
-    }
+    await postInlineComment({
+      body,
+      path: file.filename,
+      commit_id,
+      patch: file.patch,
+    });
   }
 
-  // Post summary comment
-  const summaryMessage = `
+  await postReviewComment(`
 🤖 **AI PR Review Summary**
 
 ${
@@ -229,28 +168,14 @@ ${
     ? `❌ Issues found in **${filesWithIssues} file(s)**. See inline comments.`
     : `✅ No issues found across changed files.`
 }
-
-📊 **Stats:**
-- Files reviewed: ${filesProcessed}
-- Files with issues: ${filesWithIssues}
-- Files skipped: ${filesSkipped}
-${hasHighSeverity ? '\n⚠️ **Contains high-severity issues**' : ''}
-`;
-
-  await postReviewComment(summaryMessage);
-  log("📝 Posted summary comment");
+`);
 
   // Apply labels based on review results
-  // applyLabels expects: (filesWithIssues: number, hasHighSeverity: boolean)
-  // See github.js for label definitions:
-  //   - hasHighSeverity=true → "ai-critical"
-  //   - filesWithIssues>0 → "ai-needs-attention"
-  //   - else → "ai-clean"
-  log("🏷️  Applying labels...");
+  console.log("🏷️  Applying labels...");
   await applyLabels(filesWithIssues, hasHighSeverity);
   console.log("✅ Labels applied");
 
-  console.log(`✅ Review finished: ${filesProcessed} files processed, ${filesWithIssues} with issues`);
+  console.log("✅ Review finished");
 }
 
 main().catch(err => {
