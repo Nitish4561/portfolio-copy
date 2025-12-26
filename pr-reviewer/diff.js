@@ -102,4 +102,3 @@ export function splitDiffByFile(diff) {
   
   return files;
 }
-  

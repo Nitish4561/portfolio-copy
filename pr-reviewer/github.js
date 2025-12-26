@@ -107,6 +107,7 @@ export async function postInlineComment({
     });
     return true;
   } catch {
+    console.error("Failed to post inline comment:", err);
     return false;
   }
 }
@@ -138,6 +139,7 @@ export async function postInlineCommentAtLine({
     });
     return true;
   } catch {
+    console.error("Failed to post inline comment at line:", err);
     return false;
   }
 }

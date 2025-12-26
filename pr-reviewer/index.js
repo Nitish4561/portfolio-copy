@@ -42,7 +42,6 @@ async function main() {
     }
   }
 
-  /* ---------- FILE REVIEWS ---------- */
 
   let filesWithIssues = 0;
   let hasHighSeverity = false;
@@ -51,8 +50,6 @@ async function main() {
 
   for (const file of files) {
     if (!file.patch) continue;
-
-    console.log("🔍 Reviewing", file.filename);
 
     const review = await runReview(file.patch);
 
@@ -139,7 +136,6 @@ ${issue.suggestion}`;
 
   await applyLabels(filesWithIssues, hasHighSeverity);
 
-  console.log("✅ AI PR Review completed");
 }
 
 main().catch(err => {
