@@ -12,8 +12,6 @@ import { runReview } from "./llm.js";
 import { generatePRReview } from "./pr-description.js";
 
 async function main() {
-  console.log("🚀 AI PR Reviewer started");
-
   const pr = await getPullRequest();
   const files = await getPullRequestFiles();
   const commit_id = pr.head.sha;
@@ -26,8 +24,6 @@ async function main() {
   let overallReview = null;
 
   if (SHOULD_GENERATE_REVIEW) {
-    console.log("✍️ Generating overall PR review");
-
     overallReview = await generatePRReview({
       title: pr.title,
       originalBody: pr.body,
@@ -35,15 +31,9 @@ async function main() {
     });
 
     if (overallReview) {
-      console.log("✅ Generated review:", JSON.stringify(overallReview, null, 2));
-      console.log("📝 Updating PR description...");
-      
-      // Update PR description with just the summary
       await updatePRDescription(
         `<!-- ai-generated -->\n${overallReview.summary}`
       );
-      
-      console.log("✅ PR description updated successfully");
     } else {
       console.warn("⚠️ Failed to generate overall PR review - review will be skipped");
     }
