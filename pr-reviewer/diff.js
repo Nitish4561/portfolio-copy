@@ -1,17 +1,19 @@
-// pr-reviewer/diff.js
 export function splitDiffByFile(diff) {
     const files = [];
-    const chunks = diff.split("\ndiff --git ");
+    const fileDiffs = diff.split(/^diff --git /gm).slice(1);
   
-    for (const chunk of chunks) {
-      if (!chunk.trim()) continue;
+    for (const fileDiff of fileDiffs) {
+      const headerLine = fileDiff.split("\n")[0];
   
-      const match = chunk.match(/a\/(.+?) b\/(.+?)\n/);
+      // Example header:
+      // a/src/file.js b/src/file.js
+      const match = headerLine.match(/^a\/(.+?) b\/(.+)$/);
+  
       if (!match) continue;
   
       files.push({
         path: match[2],
-        diff: "diff --git " + chunk,
+        diff: "diff --git " + fileDiff,
       });
     }
   
