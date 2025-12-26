@@ -140,6 +140,99 @@ export async function postInlineComment({
 }
 
 /**
+ * Post an inline review comment at a specific line number.
+ * 
+ * Use this when you know the exact line number where the issue occurs.
+ * Falls back to getSafeLineFromPatch if the specified line is invalid.
+ * 
+ * @param {Object} params - Comment parameters
+ * @param {string} params.body - The comment text (supports markdown)
+ * @param {string} params.path - The file path relative to repo root
+ * @param {string} params.commit_id - The SHA of the commit to comment on
+ * @param {number} params.line - The specific line number to comment on
+ * @param {string} params.patch - The git diff patch (for validation/fallback)
+ * @returns {Promise<boolean>} True if comment was posted, false otherwise
+ */
+export async function postInlineCommentAtLine({
+  body,
+  path,
+  commit_id,
+  line,
+  patch,
+}) {
+  // Validate the line is actually in the diff
+  let targetLine = line;
+  
+  if (!isLineInPatch(patch, line)) {
+    console.warn(`⚠️  Line ${line} not found in patch for ${path}, using safe line`);
+    targetLine = getSafeLineFromPatch(patch);
+    if (!targetLine) {
+      console.warn(`    Could not find any valid line in patch`);
+      return false;
+    }
+  }
+
+  try {
+    await octokit.rest.pulls.createReviewComment({
+      owner,
+      repo,
+      pull_number,
+      body,
+      commit_id,
+      path,
+      line: targetLine,
+      side: "RIGHT",
+    });
+    console.log(`✅ Posted inline comment on ${path}:${targetLine}`);
+    return true;
+  } catch (err) {
+    console.error(`❌ Failed to post inline comment on ${path}:${targetLine}`);
+    console.error(`    Error: ${err.message}`);
+    if (err.status) {
+      console.error(`    Status: ${err.status}`);
+    }
+    return false;
+  }
+}
+
+/**
+ * Check if a specific line number exists in the patch (new file side).
+ * 
+ * @param {string} patch - The git diff patch
+ * @param {number} targetLine - The line number to check
+ * @returns {boolean} True if the line exists in the patch
+ */
+function isLineInPatch(patch, targetLine) {
+  if (!patch || !targetLine) return false;
+
+  const lines = patch.split("\n");
+  let currentLine = null;
+
+  for (const line of lines) {
+    // Match hunk header
+    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    if (hunk) {
+      currentLine = Number(hunk[1]);
+      continue;
+    }
+
+    if (currentLine !== null) {
+      // Check if we've reached the target line
+      if (currentLine === targetLine) {
+        return true;
+      }
+      
+      // Increment for context and additions
+      if (line.startsWith(" ") || line.startsWith("+")) {
+        currentLine++;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Post a general comment on the PR (not attached to specific lines).
  * 
  * @param {string} body - The comment text (supports markdown)

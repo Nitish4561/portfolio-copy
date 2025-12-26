@@ -31,11 +31,15 @@ const REVIEW_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["severity", "description", "suggestion"],
+        required: ["severity", "description", "suggestion", "line"],
         properties: {
           severity: { type: "string", enum: ["low", "medium", "high"] },
           description: { type: "string" },
           suggestion: { type: "string" },
+          line: { 
+            type: "number",
+            description: "The line number in the NEW file where the issue is located"
+          },
         },
       },
     },
@@ -52,8 +56,18 @@ export async function runReview(diff) {
   const prompt = `
 You are a senior software engineer reviewing a single file diff.
 
+IMPORTANT: For each issue you find, you MUST specify the line number in the NEW file (after changes).
+
+How to find line numbers:
+1. Look for hunk headers like: @@ -10,5 +15,8 @@
+   - The "+15,8" means new content starts at line 15
+2. Track line numbers as you go through the diff:
+   - Lines starting with "+" are NEW lines (count these)
+   - Lines starting with " " (space) are context (count these too)
+   - Lines starting with "-" are DELETED (don't count in new file)
+
 Return ONLY a JSON object matching the schema.
-Focus on real issues (duplication, bugs, bad patterns).
+Focus on real issues (duplication, bugs, bad patterns, security issues).
 
 Git diff:
 \`\`\`diff
