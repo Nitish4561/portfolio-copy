@@ -20,7 +20,7 @@ export function Button({ variant = 'primary', className, href, ...props }) {
     <button className={className} {...props} />
   ) : (
     <button className={className} {...props} />
-    <button className={className} {...props} />
+
 
    
   )
