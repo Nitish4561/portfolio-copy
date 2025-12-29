@@ -46,6 +46,49 @@ export function Footer() {
               </p>
             </div>PR Reviewer SettingsPR Reviewer Settings
           </Container.Inner>
+
+          <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                &copy; {new Date().getFullYear()} Nitish Kalra. All rights
+                reserved.
+              </p>
+            </div>PR Reviewer SettingsPR Reviewer Settings
+          </Container.Inner>
+        </div>
+      </Container.Outer>
+      <Container.Inner>
+            <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                <NavLink href="/about">About</NavLink>
+                <NavLink href="/articles">Articles</NavLink>
+                <NavLink href="/uses">Uses</NavLink>
+              </div>
+              <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                &copy; {new Date().getFullYear()} Nitish Kalra. All rights
+                reserved.
+              </p>
+            </div>PR Reviewer SettingsPR Reviewer Settings
+            <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                &copy; {new Date().getFullYear()} Nitish Kalra. All rights
+                reserved.
+              </p>
+            </div>PR Reviewer SettingsPR Reviewer Settings
+          </Container.Inner>
+        </div>
+      </Container.Outer>
+      <Container.Inner>
+            <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                <NavLink href="/about">About</NavLink>
+                <NavLink href="/articles">Articles</NavLink>
+                <NavLink href="/uses">Uses</NavLink>
+              </div>
+              <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                &copy; {new Date().getFullYear()} Nitish Kalra. All rights
+                reserved.
+              </p>
+            </div>PR Reviewer SettingsPR Reviewer Settings
+          </Container.Inner>
+          </Container.Inner>
     </footer>
   )
 }
